@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foodtrucks-backend
+  labels:
+    app: foodtrucks-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: foodtrucks-backend
+  template:
+    metadata:
+      labels:
+        app: foodtrucks-backend
+    spec:
+      containers:
+      - name: backend 
+        image: ghcr.io/ktangwon/foodtrucks/ft-backend
+        env:
+        - name: ELASTIC_HOST
+          value: elasticsearch.default.svc

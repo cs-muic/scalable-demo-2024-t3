@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foodtrucks-frontend
+  labels:
+    app: foodtrucks-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: foodtrucks-frontend
+  template:
+    metadata:
+      labels:
+        app: foodtrucks-frontend
+    spec:
+      containers:
+      - name: frontend 
+        image: ghcr.io/ktangwon/foodtrucks/ft-frontend

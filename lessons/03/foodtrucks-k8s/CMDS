@@ -1,0 +1,13 @@
+k3d Cluster
+===========
+
+1. Install k3d
+2. k3d cluster create --api-port 6550 -p 8081:80@loadbalancer --agents 2 mycluster
+
+-- OR
+
+use your existing Docker Desktop k8s but install Traefik ingress yourself:
+
+helm repo add traefik https://traefik.github.io/charts
+helm repo update
+helm install traefik traefik/traefik

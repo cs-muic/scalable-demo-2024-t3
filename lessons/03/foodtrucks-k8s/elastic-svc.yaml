@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch
+spec:
+  selector:
+      app.kubernetes.io/component: elasticsearch-server
+  type:  ClusterIP
+  ports:
+  - name:  http
+    port:  9200
+  - name:  transport
+    port:  9300
