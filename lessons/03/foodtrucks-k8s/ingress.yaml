@@ -9,7 +9,7 @@ spec:
   - http:
       paths:
       - path: /search
-        pathType: Exact
+        pathType: Prefix
         backend:
           service: 
             name: foodtrucks-backend
