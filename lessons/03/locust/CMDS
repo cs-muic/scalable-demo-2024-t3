@@ -1,2 +1,2 @@
-locust -H https://mahidol.ac.th -f try_mu_static.py -u 100 -r 2 MUStatic
+locust -H https://os.muic.io -f try_os_static.py -u 100 -r 2 OSStatic
 locust -H http://127.0.0.1:5000 -f try_median.py -u 20 -r 2 Median
