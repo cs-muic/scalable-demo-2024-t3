@@ -1,0 +1,1 @@
+curl -X POST -H "Content-Type: application/json" -d '{"length": 7}' http://localhost/api/generate-lucky-numbers/

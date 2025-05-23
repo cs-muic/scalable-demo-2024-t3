@@ -1,0 +1,25 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Kanat Tangwongsan",email = "kanat.tan@mahidol.edu"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi (>=0.115.12,<0.116.0)",
+    "uvicorn (>=0.34.2,<0.35.0)",
+    "celery[redis] (>=5.5.2,<6.0.0)",
+    "opentelemetry-exporter-otlp-proto-http (>=1.33.1,<2.0.0)",
+    "opentelemetry-sdk (>=1.33.1,<2.0.0)",
+    "opentelemetry-api (>=1.33.1,<2.0.0)",
+    "opentelemetry-instrumentation-fastapi (>=0.54b1,<0.55)",
+    "opentelemetry-instrumentation-celery (>=0.54b1,<0.55)",
+    "opentelemetry-instrumentation-logging (>=0.54b1,<0.55)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

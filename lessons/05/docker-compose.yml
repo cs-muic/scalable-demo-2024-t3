@@ -1,0 +1,98 @@
+services:
+  # Redis Service
+  redis:
+    image: redis:8 # Uses the official Redis image, version 8, based on Alpine Linux for a smaller footprint.
+    volumes:
+      - redis_data:/data # Persists Redis data using a named volume.
+    restart: unless-stopped # Configures the container to restart automatically unless it was explicitly stopped.
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"] # Basic health check to ensure Redis server is responding.
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Jaeger Tracing Service
+  jaeger:
+    image: jaegertracing/jaeger:2.6.0
+    ports:
+      # Jaeger UI
+      - "16686:16686"   # Jaeger UI / API port. Access the UI at http://localhost:16686
+      # Zipkin compatible port (if you have Zipkin tracers)
+      - "9411:9411"     # Zipkin compatible port
+      # OpenTelemetry Protocol (OTLP) gRPC receiver
+      - "4317:4317"     # OTLP gRPC receiver (default)
+      # OpenTelemetry Protocol (OTLP) HTTP receiver
+      - "4318:4318"     # OTLP HTTP receiver (default)
+    restart: unless-stopped # Configures the container to restart automatically.
+    environment:
+      - LOG_LEVEL=info # Sets the log level for Jaeger components.
+
+  api:
+    build:
+      context: ./app 
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - APP_ENV=development
+      - OTLP_COLLECTOR_HOST=jaeger
+      - OTEL_SERVICE_NAME=fastapi
+    labels:
+      - "traefik.enable=true"
+      # Router for FastAPI: listens for requests on the 'web' entrypoint (port 80)
+      # and routes requests with path prefix /fastapi
+      - "traefik.http.routers.fastapi.entrypoints=web"
+      - "traefik.http.routers.fastapi.rule=PathPrefix(`/api`)"
+      # Service definition for Traefik: tells Traefik that the FastAPI app runs on port 8000 internally
+      - "traefik.http.services.fastapi.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.fastapi-stripprefix.stripprefix.prefixes=/api"
+      - "traefik.http.routers.fastapi.middlewares=fastapi-stripprefix"
+    depends_on:
+      - redis 
+
+  worker:
+    build:
+      context: ./app 
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["celery", "-A", "worker_make_lucky_numbers.app", "worker", "--loglevel=info"]
+    environment:
+      - OTLP_COLLECTOR_HOST=jaeger
+      - OTEL_SERVICE_NAME=worker
+      - OTEL_EXPORTER_OTLP_ENDPOINT="http://jaeger:4318"
+    depends_on:
+      - redis 
+
+
+  traefik:
+    image: traefik:v3.4 # Using a specific stable version of Traefik
+    ports:
+      - "80:80"     # HTTP traffic entrypoint
+      - "8080:8080"   # Traefik dashboard (for development/debugging)
+    volumes:
+      # Mount Docker socket to allow Traefik to discover services
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      # Optional: Mount a static configuration file if needed (e.g., traefik.yml)
+      # - ./traefik_config/traefik.yml:/etc/traefik/traefik.yml:ro
+      # Optional: Persist ACME certificates for Let's Encrypt (HTTPS)
+      # - traefik_certs:/letsencrypt
+    command:
+      - "--api.insecure=true" # Enables the Traefik dashboard on port 8080 (DO NOT use in production without authentication)
+      - "--providers.docker=true" # Enables Docker as a configuration provider
+      - "--providers.docker.exposedbydefault=false" # Only expose containers with 'traefik.enable=true' label
+      - "--entrypoints.web.address=:80" # Defines an entrypoint named 'web' listening on port 80
+
+      - "--tracing=true" # Enable tracing
+      - "--tracing.otlp=true" # use OpenTelemetry
+      - "--tracing.otlp.http=true" # use http
+      - "--tracing.otlp.http.endpoint=http://jaeger:4318/v1/traces" # Send traces to Jaeger's OTLP http endpoint
+      - "--tracing.serviceName=traefik-gateway"
+      # Example for HTTPS (requires DNS setup and uncommenting volume for certs):
+      # - "--entrypoints.websecure.address=:443"
+      # - "--certificatesresolvers.myresolver.acme.email=your-email@example.com"
+      # - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      # - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+    restart: unless-stopped
+
+volumes:
+  redis_data: # Defines the named volume for Redis data persistence.
+    driver: local
